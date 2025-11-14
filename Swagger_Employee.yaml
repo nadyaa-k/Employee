@@ -1,0 +1,242 @@
+openapi: 3.0.2
+info:
+  title: Employee
+  description: >
+    **Employee** — внутренний сервис для работы с реквизитами сотрудников. 
+    
+    
+    Все реквизиты хранятся централизованно. Благодаря этому актуальные данные доступны для всех организаций, к которым относится сотрудник. 
+    
+    
+    С основной документацией можно ознакомиться по [ссылке]().
+  version: 1.0.0
+servers:
+  - url: https://kontur.ru:9443/api
+    description: Промышленный контур
+  - url: https://testsbi.kontur.ru:9443/api
+    description: Тестовый контур
+paths:
+  /v1/person:
+    put:
+      tags:
+        - persons
+      summary: Создание или обновление данных сотрудника
+      description: |
+        Универсальный метод для создания нового сотрудника или обновления данных существующего.
+        Если сотрудник с указанным Guid существует - происходит обновление, иначе создается новая запись.
+      operationId: savePerson
+      parameters:
+        - name: user
+          in: header
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: GUID пользователя
+          example: "123e4567-e89b-12d3-a456-426614174000"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Person"
+            examples:
+              createExample:
+                summary: Создание нового сотрудника
+                value:
+                  FullName:
+                    LastName: "Иванов"
+                    FirstName: "Иван" 
+                    MiddleName: "Иванович"
+                  InnFl: "771122334455"
+                  Gender: "Male"
+                  Citizenship: "RU"
+                  BirthDate: "1985-03-15"
+                  BirthPlace: "г. Москва"
+                  Phone: "+79991234567"
+                  Email: "ivanov@example.com"
+                  IdentityCard:
+                    DocumentType: "Passport"
+                    Series: "4510"
+                    Number: "123456"
+                    Issuer: "ОУФМС России"
+                    IssuanceDate: "2015-04-20"
+                    IssuerCode: "770-123"
+              updateExample:
+                summary:
+                value:
+                  Guid: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                  FullName:
+                    LastName: "Иванов"
+                    FirstName: "Петр"
+                    MiddleName: "Иванович"
+                  Phone: "+79997654321"
+                  Email: "petr.ivanov@example.com"
+      responses:
+        "200":
+          description: Успешное сохранение/обновление сотрудника
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+  /v1/person/{guid}/roles:
+    get:
+      tags:
+        - roles
+      summary: Получение списка ролей для указанного сотрудника
+      description: |
+        Получение списка ролей для указанного сотрудника 
+      operationId: getPersonRoles
+      parameters:
+        - name: user
+          in: header
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: guid
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: GUID сотрудника
+        - name: skip
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+          description: |
+            Количество записей, которые нужно пропустить от начала списка.
+            Используется для постраничной навигации.
+          example: 0
+        - name: take
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000
+          description: |
+            Количество записей, которые нужно вернуть в ответе.
+            Ограничение - не более 1000 записей за один запрос.
+          example: 20
+      responses:
+        "200":
+          description: Успешное получение ролей сотрудника
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      type: object
+components:
+  schemas:
+    Person:
+      type: object
+      required:
+        - FullName
+      properties:
+        Guid:
+          type: string
+          format: uuid
+          nullable: true
+          description: Уникальный идентификатор сотрудника
+          example: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+        FullName:
+          $ref: "#/components/schemas/FullName"
+        InnFl:
+          type: string
+          pattern: '^\d{12}$'
+          description: ИНН (12 цифр)
+          example: "771122334455"
+        Gender:
+          type: string
+          enum: [Male, Female]
+          description: Пол
+          example: "Male"
+        Citizenship:
+          type: string
+          pattern: '^[A-Z]{2}$'
+          description: Гражданство
+          example: "Россия"
+        BirthDate:
+          type: string
+          format: date
+          description: Дата рождения в формате ГГГГ-ММ-ДД
+          example: "1985-03-15"
+        BirthPlace:
+          type: string
+          description: Место рождения
+          example: "г. Москва"
+        Phone:
+          type: string
+          pattern: '^\+7\d{10}$'
+          description: Телефон в формате +7XXXXXXXXXX (11 цифр с кодом страны)
+          example: "+79991234567"
+        Email:
+          type: string
+          format: email
+          description: Адрес электронной почты
+          example: "ivanov@example.com"
+        IdentityCard:
+          $ref: "#/components/schemas/IdentityCard"
+
+    FullName:
+      type: object
+      required:
+        - LastName
+        - FirstName
+      properties:
+        LastName:
+          type: string
+          description: Фамилия
+          example: "Иванов"
+        FirstName:
+          type: string
+          description: Имя
+          example: "Иван"
+        MiddleName:
+          type: string
+          description: Отчество
+          example: "Иванович"
+
+    IdentityCard:
+      type: object
+      properties:
+        DocumentType:
+          type: string
+          description: Тип документа
+          example: "Passport"
+        Series:
+          type: string
+          description: Серия документа
+          example: "4510"
+        Number:
+          type: string
+          description: Номер документа
+          example: "123456"
+        Issuer:
+          type: string
+          description: Кем выдан
+          example: "ОУФМС России"
+        IssuanceDate:
+          type: string
+          format: date
+          description: Дата выдачи
+          example: "2015-04-20"
+        IssuerCode:
+          type: string
+          description: Код подразделения
+          example: "770-123"
