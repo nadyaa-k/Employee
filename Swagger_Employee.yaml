@@ -16,23 +16,23 @@ servers:
   - url: https://testsbi.kontur.ru:9443/api
     description: Тестовый контур
 paths:
-  /v1/person:
+  /v1/person/{PersonId}:
     put:
       tags:
         - persons
-      summary: Создание или обновление данных сотрудника
+      summary: Создание нового сотрудника или обновления данных существующего.
       description: |
-        Универсальный метод для создания нового сотрудника или обновления данных существующего.
-        Если сотрудник с указанным Guid существует - происходит обновление, иначе создается новая запись.
+        Создание нового сотрудника или обновления данных существующего. **Метод идемпотентен** - повторные вызовы с одинаковыми данными не создают дубликатов.
+        GUID сотрудника генерируется на стороне клиента.
       operationId: savePerson
       parameters:
-        - name: user
-          in: header
+        - name: PersonId
+          in: path
           required: true
           schema:
             type: string
             format: uuid
-          description: GUID пользователя
+          description: GUID сотрудника (генерируется на клиенте)
           example: "123e4567-e89b-12d3-a456-426614174000"
       requestBody:
         required: true
@@ -65,7 +65,6 @@ paths:
               updateExample:
                 summary:
                 value:
-                  Guid: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
                   FullName:
                     LastName: "Иванов"
                     FirstName: "Петр"
